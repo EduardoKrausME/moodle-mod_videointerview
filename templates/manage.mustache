@@ -1,0 +1,88 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_videointerview/manage
+
+    Example context (json):
+    {
+        Aqui tem que criar o context em inglês
+    }
+}}
+<div class="mod-videointerview-manage">
+    <div class="d-flex gap-2 flex-wrap mb-3">
+        <a class="btn btn-primary" href="{{{addquestionurl}}}">{{#str}}addquestion, videointerview{{/str}}</a>
+        <a class="btn btn-secondary" href="{{{addcriterionurl}}}">{{#str}}addcriterion, videointerview{{/str}}</a>
+        <a class="btn btn-secondary" href="{{{reporturl}}}">{{#str}}report, videointerview{{/str}}</a>
+        <a class="btn btn-link" href="{{{viewurl}}}">{{#str}}view{{/str}}</a>
+    </div>
+    <h2>{{#str}}questions, videointerview{{/str}}</h2>
+    {{^hasquestions}}
+        <div class="alert alert-info">{{#str}}noquestions, videointerview{{/str}}</div>{{/hasquestions}}
+    {{#hasquestions}}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>{{#str}}question{{/str}}</th>
+                    <th>{{#str}}responsetypes, videointerview{{/str}}</th>
+                    <th>{{#str}}timelimit, videointerview{{/str}}</th>
+                    <th>{{#str}}actions{{/str}}</th>
+                </tr>
+                </thead>
+                <tbody>{{#questions}}
+                    <tr>
+                        <td>{{position}}</td>
+                        <td>{{title}}</td>
+                        <td>{{types}}</td>
+                        <td>{{timelimit}}</td>
+                        <td class="text-nowrap">
+                            <a class="btn btn-sm btn-outline-primary" href="{{{editurl}}}">{{#str}}edit{{/str}}</a>
+                            {{#upurl}}<a class="btn btn-sm btn-outline-secondary" href="{{{upurl}}}">↑</a>{{/upurl}}
+                            {{#downurl}}
+                                <a class="btn btn-sm btn-outline-secondary" href="{{{downurl}}}">↓</a>{{/downurl}}
+                            <a class="btn btn-sm btn-outline-danger" href="{{{deleteurl}}}"
+                               data-confirm="{{#str}}deleteconfirm, videointerview{{/str}}">{{#str}}delete{{/str}}</a>
+                        </td>
+                    </tr>{{/questions}}</tbody>
+            </table>
+        </div>
+    {{/hasquestions}}
+    <h2 class="mt-4">{{#str}}criteria, videointerview{{/str}}</h2>
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+            <tr>
+                <th>{{#str}}criterionname, videointerview{{/str}}</th>
+                <th>{{#str}}maxscore, videointerview{{/str}}</th>
+                <th>{{#str}}weight, videointerview{{/str}}</th>
+                <th>{{#str}}actions{{/str}}</th>
+            </tr>
+            </thead>
+            <tbody>{{#criteria}}
+                <tr>
+                    <td>{{name}}</td>
+                    <td>{{maxscore}}</td>
+                    <td>{{weight}}</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="{{{editurl}}}">{{#str}}edit{{/str}}</a>
+                        <a class="btn btn-sm btn-outline-danger" href="{{{deleteurl}}}">{{#str}}delete{{/str}}</a>
+                    </td>
+                </tr>{{/criteria}}</tbody>
+        </table>
+    </div>
+</div>
