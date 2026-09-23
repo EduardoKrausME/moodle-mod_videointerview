@@ -38,7 +38,7 @@ $instances = get_all_instances_in_course('videointerview', $course);
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('modulenameplural', 'videointerview'));
 if (!$instances) {
-    echo $OUTPUT->notification(get_string('noactivities', 'moodle'), 'info');
+    echo $OUTPUT->notification(get_string('noactivities', 'videointerview'), 'info');
 } else {
     $table = new html_table();
     $table->head = [get_string('name'), get_string('attempts', 'videointerview')];

@@ -34,7 +34,7 @@ class custom_completion extends activity_custom_completion {
      * Returns state for a custom rule.
      */
     public function get_state(string $rule): int {
-        global $DB, $USER;
+        global $DB;
         if ($rule !== 'completionsubmit') {
             throw new \coding_exception('Unknown completion rule: ' . $rule);
         }
@@ -44,11 +44,20 @@ class custom_completion extends activity_custom_completion {
         $exists = $DB->record_exists_select('videointerview_attempts',
             'videointerviewid = :id AND userid = :userid AND status IN (:submitted, :graded)', [
                 'id' => $this->cm->instance,
-                'userid' => $USER->id,
+                'userid' => $this->userid,
                 'submitted' => 'submitted',
                 'graded' => 'graded',
             ]);
         return $exists ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+    }
+
+    /**
+     * Returns the custom completion rules defined by this activity.
+     *
+     * @return array
+     */
+    public static function get_defined_custom_rules(): array {
+        return ['completionsubmit'];
     }
 
     /**

@@ -60,7 +60,6 @@ class question_form extends moodleform {
         $mform->hideIf('videourl', 'videosource', 'eq', 'upload');
         $mform->addElement('filemanager', 'videofile', get_string('videofile', 'videointerview'), null, [
             'subdirs' => 0,
-            'maxfiles' => 1,
             'accepted_types' => ['video'],
         ]);
         $mform->hideIf('videofile', 'videosource', 'neq', 'upload');
@@ -80,7 +79,7 @@ class question_form extends moodleform {
         $mform->addElement('selectyesno', 'required', get_string('requiredquestion', 'videointerview'));
         $mform->setDefault('required', 1);
 
-        $mform->addElement('header', 'conditionheader', get_string('conditionheader', 'videointerview'));
+        $mform->addElement('html', '<h3>' . get_string('conditionheader', 'videointerview') . '</h3>');
         $questions = [0 => get_string('conditionalways', 'videointerview')] + ($custom['conditionquestions'] ?? []);
         $mform->addElement('select', 'conditionquestionid', get_string('conditionquestion', 'videointerview'), $questions);
         $operators = [
@@ -129,6 +128,15 @@ class question_form extends moodleform {
                 $errors['videourl'] = get_string('invalidyoutubeurl', 'videointerview');
             } else if ($source === 'vimeo' && !preg_match('~vimeo\.com/(?:video/)?[0-9]+~i', $url)) {
                 $errors['videourl'] = get_string('invalidvimeourl', 'videointerview');
+            }
+        }
+        foreach (['videofile'] as $field) {
+            $draftid = (int)($data[$field] ?? 0);
+            if ($draftid > 0) {
+                $draftinfo = file_get_draft_area_info($draftid);
+                if ((int)$draftinfo['filecount'] > 1) {
+                    $errors[$field] = get_string('errormaxfiles', 'videointerview');
+                }
             }
         }
         return $errors;

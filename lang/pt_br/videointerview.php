@@ -81,6 +81,7 @@ $string['modulenameplural'] = 'Entrevistas em Vídeo';
 $string['movedown'] = 'Mover para baixo';
 $string['moveup'] = 'Mover para cima';
 $string['newattempt'] = 'Iniciar nova tentativa';
+$string['noactivities'] = 'Não há atividades Video Interview neste curso.';
 $string['noattempts'] = 'Ainda não há tentativas.';
 $string['noquestions'] = 'Nenhuma pergunta foi criada ainda.';
 $string['notgraded'] = 'Não avaliada';

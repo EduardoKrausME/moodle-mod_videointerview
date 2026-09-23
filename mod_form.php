@@ -82,4 +82,34 @@ class mod_videointerview_mod_form extends moodleform_mod {
             $defaultvalues[$this->get_suffixed_name('completionsubmit')] = $defaultvalues['completionsubmit'];
         }
     }
+
+    /**
+     * Return submitted data using the database field name.
+     *
+     * @return stdClass|false
+     */
+    public function get_data() {
+        $data = parent::get_data();
+        if (!$data) {
+            return $data;
+        }
+
+        $field = $this->get_suffixed_name('completionsubmit');
+        if (property_exists($data, $field)) {
+            $data->completionsubmit = $data->{$field};
+            unset($data->{$field});
+        }
+
+        return $data;
+    }
+
+    /**
+     * Build a completion rule field name unique to this module.
+     *
+     * @param string $field Base field.
+     * @return string
+     */
+    private function get_suffixed_name(string $field): string {
+        return $field . '_videointerview';
+    }
 }

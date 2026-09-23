@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$valid) {
             $error = get_string('invaliddata', 'error');
         } else if ((int)$_FILES['mediafile']['size'] > get_max_upload_file_size()) {
-            $error = get_string('uploadedfiletoobig', 'error');
+            $error = get_string('uploadedfiletoobig');
         }
     }
     if (!$error) {
