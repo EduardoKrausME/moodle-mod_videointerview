@@ -39,6 +39,15 @@ $PAGE->set_url('/mod/videointerview/view.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($activity->name));
 $PAGE->set_heading($course->fullname);
 
+$event = \\mod_videointerview\\event\\course_module_viewed::create([
+    'context' => $context,
+    'objectid' => $activity->id,
+]);
+$event->add_record_snapshot('course_modules', $cm);
+$event->add_record_snapshot('course', $course);
+$event->add_record_snapshot('videointerview', $activity);
+$event->trigger();
+
 $questioncount = $DB->count_records('videointerview_questions', ['videointerviewid' => $activity->id]);
 $current = \mod_videointerview\interview_manager::get_current_attempt($activity->id, $USER->id);
 $latest = \mod_videointerview\interview_manager::get_latest_attempt($activity->id, $USER->id);
