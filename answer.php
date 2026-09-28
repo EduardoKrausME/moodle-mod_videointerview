@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$error && $storedtype === 'text' && $question->required && trim(strip_tags($text)) === '') {
         $error = get_string('responsemissing', 'videointerview');
     }
-    if (!$error && in_array($storedtype, ['audio', 'video'], true) && $question->required && !$hasnewfile && !$existingmedia) {
+    if (!$error && in_array($storedtype, ['audio', 'video'], true) && $question->required && !$hasupload && !$existingmedia) {
         $error = get_string('responsemissing', 'videointerview');
     }
     if (!$error && $hasupload && !$hasnewfile) {
