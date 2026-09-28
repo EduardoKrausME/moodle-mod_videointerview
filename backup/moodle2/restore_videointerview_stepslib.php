@@ -159,6 +159,7 @@ class restore_videointerview_activity_structure_step extends restore_activity_st
      * Restores related files.
      */
     protected function after_execute(): void {
+        $this->add_related_files('mod_videointerview', 'intro', null);
         $this->add_related_files('mod_videointerview', 'questionvideo', 'videointerview_question');
         $this->add_related_files('mod_videointerview', 'responseaudio', 'videointerview_response');
         $this->add_related_files('mod_videointerview', 'responsevideo', 'videointerview_response');
