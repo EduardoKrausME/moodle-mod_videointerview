@@ -28,7 +28,9 @@ use context;
 use context_module;
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\contextlist;
+use core_privacy\local\request\userlist;
 use core_privacy\local\request\transform;
 use core_privacy\local\request\writer;
 
@@ -37,7 +39,8 @@ use core_privacy\local\request\writer;
  */
 class provider implements
     \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider {
+    \core_privacy\local\request\plugin\provider,
+    \core_privacy\local\request\core_userlist_provider {
 
     /**
      * Describes stored personal data.
@@ -62,6 +65,7 @@ class provider implements
             'feedback' => 'privacy:metadata:videointerview_grades:feedback',
             'graderid' => 'privacy:metadata:videointerview_grades:graderid',
         ], 'privacy:metadata:videointerview_grades');
+        $collection->add_subsystem_link('core_files', [], 'privacy:metadata:core_files');
         return $collection;
     }
 
@@ -70,19 +74,66 @@ class provider implements
      */
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
+        $params = [
+            'contextlevel' => CONTEXT_MODULE,
+            'modname' => 'videointerview',
+            'userid' => $userid,
+        ];
+
         $sql = "SELECT ctx.id
                   FROM {context} ctx
                   JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :contextlevel
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                  JOIN {videointerview} v ON v.id = cm.instance
-                  JOIN {videointerview_attempts} a ON a.videointerviewid = v.id
+                  JOIN {videointerview_attempts} a ON a.videointerviewid = cm.instance
                  WHERE a.userid = :userid";
-        $contextlist->add_from_sql($sql, [
+        $contextlist->add_from_sql($sql, $params);
+
+        $sql = "SELECT ctx.id
+                  FROM {context} ctx
+                  JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :contextlevel
+                  JOIN {modules} m ON m.id = cm.module AND m.name = :modname
+                  JOIN {videointerview_attempts} a ON a.videointerviewid = cm.instance
+                  JOIN {videointerview_grades} g ON g.attemptid = a.id
+                 WHERE g.graderid = :userid";
+        $contextlist->add_from_sql($sql, $params);
+
+        return $contextlist;
+    }
+
+    /**
+     * Gets users who have personal data in a module context.
+     *
+     * @param userlist $userlist User list for the context.
+     * @return void
+     */
+    public static function get_users_in_context(userlist $userlist): void {
+        $context = $userlist->get_context();
+        if (!$context instanceof context_module) {
+            return;
+        }
+
+        $params = [
+            'contextid' => $context->id,
             'contextlevel' => CONTEXT_MODULE,
             'modname' => 'videointerview',
-            'userid' => $userid,
-        ]);
-        return $contextlist;
+        ];
+
+        $sql = "SELECT a.userid
+                  FROM {context} ctx
+                  JOIN {course_modules} cm ON cm.id = ctx.instanceid
+                  JOIN {modules} m ON m.id = cm.module AND m.name = :modname
+                  JOIN {videointerview_attempts} a ON a.videointerviewid = cm.instance
+                 WHERE ctx.id = :contextid AND ctx.contextlevel = :contextlevel";
+        $userlist->add_from_sql('userid', $sql, $params);
+
+        $sql = "SELECT g.graderid
+                  FROM {context} ctx
+                  JOIN {course_modules} cm ON cm.id = ctx.instanceid
+                  JOIN {modules} m ON m.id = cm.module AND m.name = :modname
+                  JOIN {videointerview_attempts} a ON a.videointerviewid = cm.instance
+                  JOIN {videointerview_grades} g ON g.attemptid = a.id
+                 WHERE ctx.id = :contextid AND ctx.contextlevel = :contextlevel";
+        $userlist->add_from_sql('graderid', $sql, $params);
     }
 
     /**
@@ -134,6 +185,31 @@ class provider implements
                 writer::with_context($context)->export_data(array_merge($path, [get_string('evaluation', 'videointerview')]),
                     (object)['criteria' => array_values($grades)]);
             }
+
+            $graderrecords = $DB->get_records_sql(
+                "SELECT g.*
+                   FROM {videointerview_grades} g
+                   JOIN {videointerview_attempts} a ON a.id = g.attemptid
+                  WHERE a.videointerviewid = :videointerviewid
+                    AND g.graderid = :graderid",
+                ['videointerviewid' => $cm->instance, 'graderid' => $userid]
+            );
+            if ($graderrecords) {
+                $items = [];
+                foreach ($graderrecords as $grade) {
+                    $items[] = (object)[
+                        'attemptid' => $grade->attemptid,
+                        'criterionid' => $grade->criterionid,
+                        'score' => $grade->score,
+                        'feedback' => $grade->feedback,
+                        'timegraded' => $grade->timegraded ? transform::datetime($grade->timegraded) : null,
+                    ];
+                }
+                writer::with_context($context)->export_data(
+                    [get_string('privacy:path', 'videointerview'), get_string('privacy:grading', 'videointerview')],
+                    (object)['criteria' => $items]
+                );
+            }
         }
     }
 
@@ -172,7 +248,83 @@ class provider implements
                 'videointerviewid = :id AND userid = :userid', ['id' => $cm->instance, 'userid' => $userid]);
             self::delete_attempts($context, $attemptids);
             $DB->delete_records('videointerview_attempts', ['videointerviewid' => $cm->instance, 'userid' => $userid]);
+            self::delete_grader_data($cm->instance, [$userid]);
         }
+    }
+
+    /**
+     * Deletes data for a list of users in one module context.
+     *
+     * @param approved_userlist $userlist Approved users and context.
+     * @return void
+     */
+    public static function delete_data_for_users(approved_userlist $userlist): void {
+        global $DB;
+
+        $context = $userlist->get_context();
+        if (!$context instanceof context_module) {
+            return;
+        }
+
+        $userids = $userlist->get_userids();
+        if (!$userids) {
+            return;
+        }
+
+        $cm = get_coursemodule_from_id('videointerview', $context->instanceid, 0, false, IGNORE_MISSING);
+        if (!$cm) {
+            return;
+        }
+
+        [$usersql, $params] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'user');
+        $params['videointerviewid'] = $cm->instance;
+        $attemptids = $DB->get_fieldset_sql(
+            "SELECT id
+               FROM {videointerview_attempts}
+              WHERE videointerviewid = :videointerviewid
+                AND userid {$usersql}",
+            $params
+        );
+
+        self::delete_attempts($context, $attemptids);
+        $DB->delete_records_select(
+            'videointerview_attempts',
+            "videointerviewid = :videointerviewid AND userid {$usersql}",
+            $params
+        );
+        self::delete_grader_data($cm->instance, $userids);
+    }
+
+    /**
+     * Deletes criterion grades created by the supplied graders in one activity.
+     *
+     * @param int $videointerviewid Activity instance id.
+     * @param array $userids Grader user ids.
+     * @return void
+     */
+    private static function delete_grader_data(int $videointerviewid, array $userids): void {
+        global $DB;
+
+        if (!$userids) {
+            return;
+        }
+
+        [$usersql, $params] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'grader');
+        $params['videointerviewid'] = $videointerviewid;
+        $gradeids = $DB->get_fieldset_sql(
+            "SELECT g.id
+               FROM {videointerview_grades} g
+               JOIN {videointerview_attempts} a ON a.id = g.attemptid
+              WHERE a.videointerviewid = :videointerviewid
+                AND g.graderid {$usersql}",
+            $params
+        );
+        if (!$gradeids) {
+            return;
+        }
+
+        [$gradesql, $gradeparams] = $DB->get_in_or_equal($gradeids, SQL_PARAMS_NAMED, 'grade');
+        $DB->delete_records_select('videointerview_grades', "id {$gradesql}", $gradeparams);
     }
 
     /**
