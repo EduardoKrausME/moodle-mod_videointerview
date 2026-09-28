@@ -86,6 +86,7 @@ class backup_videointerview_activity_structure_step extends backup_activity_stru
 
         $attempt->annotate_ids('user', 'userid');
         $grade->annotate_ids('user', 'graderid');
+        $activity->annotate_files('mod_videointerview', 'intro', null);
         $question->annotate_files('mod_videointerview', 'questionvideo', 'id');
         $response->annotate_files('mod_videointerview', 'responseaudio', 'id');
         $response->annotate_files('mod_videointerview', 'responsevideo', 'id');
