@@ -78,7 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $storedtype = $selected === 'recordvideo' ? 'video' : $selected;
     $text = optional_param('textresponse', '', PARAM_RAW);
-    $hasnewfile = !empty($_FILES['mediafile']) && (int)$_FILES['mediafile']['error'] === UPLOAD_ERR_OK;
+    $uploadedfile = $_FILES['mediafile'] ?? null;
+    $uploaderror = is_array($uploadedfile) ? (int)($uploadedfile['error'] ?? UPLOAD_ERR_NO_FILE) : UPLOAD_ERR_NO_FILE;
+    $hasupload = $uploaderror !== UPLOAD_ERR_NO_FILE;
+    $hasnewfile = $hasupload && $uploaderror === UPLOAD_ERR_OK;
     $existingmedia = false;
     if (in_array($storedtype, ['audio', 'video'], true)) {
         $area = $storedtype === 'audio' ? 'responseaudio' : 'responsevideo';
@@ -91,14 +94,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$error && in_array($storedtype, ['audio', 'video'], true) && $question->required && !$hasnewfile && !$existingmedia) {
         $error = get_string('responsemissing', 'videointerview');
     }
-    if (!$error && $hasnewfile) {
-        $tmp = $_FILES['mediafile']['tmp_name'];
-        $mimetype = mime_content_type($tmp) ?: (string)$_FILES['mediafile']['type'];
-        $valid = $storedtype === 'audio' ? str_starts_with($mimetype, 'audio/') : str_starts_with($mimetype, 'video/');
-        if (!$valid) {
-            $error = get_string('invaliddata', 'error');
-        } else if ((int)$_FILES['mediafile']['size'] > get_max_upload_file_size()) {
+    if (!$error && $hasupload && !$hasnewfile) {
+        if (in_array($uploaderror, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
             $error = get_string('uploadedfiletoobig');
+        } else {
+            $error = get_string('invaliddata', 'error');
+        }
+    }
+    if (!$error && $hasnewfile) {
+        if (!in_array($storedtype, ['audio', 'video'], true)) {
+            $error = get_string('invaliddata', 'error');
+        } else {
+            $tmp = (string)$uploadedfile['tmp_name'];
+            if (!is_uploaded_file($tmp)) {
+                $error = get_string('invaliddata', 'error');
+            } else {
+                $maxbytes = get_user_max_upload_file_size($context, $CFG->maxbytes, $course->maxbytes);
+                if ($maxbytes > 0 && (int)$uploadedfile['size'] > $maxbytes) {
+                    $error = get_string('uploadedfiletoobig');
+                } else {
+                    $mimetype = mime_content_type($tmp) ?: (string)$uploadedfile['type'];
+                    $valid = $storedtype === 'audio'
+                        ? str_starts_with($mimetype, 'audio/')
+                        : str_starts_with($mimetype, 'video/');
+                    if (!$valid) {
+                        $error = get_string('invaliddata', 'error');
+                    }
+                }
+            }
         }
     }
     if (!$error) {
@@ -117,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $area = $storedtype === 'audio' ? 'responseaudio' : 'responsevideo';
             get_file_storage()->delete_area_files($context->id, 'mod_videointerview', 'responseaudio', $response->id);
             get_file_storage()->delete_area_files($context->id, 'mod_videointerview', 'responsevideo', $response->id);
-            $filename = clean_param($_FILES['mediafile']['name'], PARAM_FILE);
+            $filename = clean_param($uploadedfile['name'], PARAM_FILE);
             if ($filename === '') {
                 $filename = $storedtype . '-' . $response->id . ($storedtype === 'audio' ? '.webm' : '.webm');
             }
@@ -128,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'itemid' => $response->id,
                 'filepath' => '/',
                 'filename' => $filename,
-            ], $_FILES['mediafile']['tmp_name']);
+            ], $uploadedfile['tmp_name']);
         }
         $attempt->timemodified = $now;
         $DB->update_record('videointerview_attempts', $attempt);
