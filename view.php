@@ -39,7 +39,7 @@ $PAGE->set_url('/mod/videointerview/view.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($activity->name));
 $PAGE->set_heading($course->fullname);
 
-$event = \\mod_videointerview\\event\\course_module_viewed::create([
+$event = \mod_videointerview\event\course_module_viewed::create([
     'context' => $context,
     'objectid' => $activity->id,
 ]);
