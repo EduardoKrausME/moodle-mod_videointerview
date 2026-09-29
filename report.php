@@ -21,6 +21,7 @@
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 require('../../config.php');
 $id = required_param('id', PARAM_INT);
 $cm = get_coursemodule_from_id('videointerview', $id, 0, false, MUST_EXIST);
