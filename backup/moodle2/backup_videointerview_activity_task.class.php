@@ -25,7 +25,7 @@
 /**
  * Backup task for Video Interview.
  */
-defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die;
 require_once($CFG->dirroot . '/mod/videointerview/backup/moodle2/backup_videointerview_stepslib.php');
 
 /**
