@@ -162,10 +162,10 @@ class interview_manager {
         $actual = trim((string)$response->textresponse);
         $expected = trim((string)$question->conditionvalue);
         if ($operator === 'equals') {
-            return core_text::strtolower($actual) === core_text::strtolower($expected);
+            return strtolower($actual) === strtolower($expected);
         }
         if ($operator === 'contains') {
-            return core_text::strpos(core_text::strtolower($actual), core_text::strtolower($expected)) !== false;
+            return strpos(strtolower($actual), strtolower($expected)) !== false;
         }
         return true;
     }
