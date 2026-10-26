@@ -21,10 +21,6 @@ students answer with text, uploaded audio/video, or browser-recorded audio/video
 Moodle 4.4 or newer and PHP supported by that Moodle release. Browser recording requires a secure context (HTTPS) and
 MediaRecorder support.
 
-## Installation
-
-Copy the `videointerview` directory to `mod/videointerview`, then visit Site administration > Notifications.
-
 ## License
 
 GNU GPL v3 or later.
